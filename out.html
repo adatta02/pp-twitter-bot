@@ -1,0 +1,38 @@
+Logged in? false
+Sign in to Twitter!
+Logged in? true
+Trying confirmEmail
+loaded https://twitter.com/account/confirm_email/Jackie63972596/AAGG3-HAD3D-133834
+<html><head>
+    <script type="text/javascript">
+      //<![CDATA[
+      (function(g){
+        var l    = g.location,
+            a    = l.href.replace("#%21","#!"),
+            ev   = [],
+            ssl  = g.navigator.userAgent.search(/webkit/i) != -1,
+            protocol = ssl ? "https:" : "http:";
+
+        a=a.split("#!")[1];
+
+        if( a ){
+          l.hash = "";
+          l.replace(protocol + "//mobile.twitter.com" + a.replace(/^([^\/])/,"/$1"));
+        } else {
+          var loc = protocol + "//mobile.twitter.com/";
+
+          if (l.pathname == '/' && l.hash != '') {
+            var h = l.hash.substr(1).toLowerCase();
+            for (var i = 0; i < ev.length; i++) {
+              if (h == ev[i]) {
+                loc += 'hashtag/' + h;
+                break;
+              }
+            }
+          };
+
+          l.replace(loc);
+        }
+      })(window);
+      //]]>
+    </script></head></html>

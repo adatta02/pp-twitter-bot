@@ -23,6 +23,7 @@ page.open('https://mobile.twitter.com/session/new', function(status) {
 	var isLoaded = page.injectJs( "jquery.min.js" );
 	var isConfigLoaded = page.injectJs( "jQueryTwitter.js" );
 	var isClientLoaded = page.injectJs( system.args[1] );
+	var res = null;
 	
 	if( !isLoaded || !isConfigLoaded || !isClientLoaded ){
 		console.log("FATAL: Could not load local JS scripts!");
@@ -32,16 +33,38 @@ page.open('https://mobile.twitter.com/session/new', function(status) {
 		return jQuery("input[value='Sign out']").length > 0 ? true : false;
 	});
 	
+	console.log("Logged in? " + isLoggedIn);
+	
 	if( !isLoggedIn ){
-		var res = page.evaluate( function(){
+		res = page.evaluate( function(){
 			jQuery.phantomTwitter.login( phantomConfig.email, phantomConfig.password );
 			return jQuery("title").text();
 		});
 		console.log( res );
 		return true;
 	}
+		
+	console.log( "Trying " + configObj.action );
 	
-	console.log( "logged in!" );
+	if( configObj.action == "confirmEmail" ){
+		
+		page.open( configObj.link, function(status){
+			console.log("loaded " + configObj.link);
+			console.log( page.content );
+			// phantom.exit();
+		});
+		
+		return true;
+	}
 	
-	phantom.exit();
+	res = page.evaluate( function(){
+		jQuery.phantomTwitter.takeLoggedInAction( phantomConfig.action, phantomConfig );
+		return jQuery("title").text();
+	});
+	
+	if( res == 0 ){
+		console.log("Completed bot run. Exiting!");
+		phantom.exit();
+	}
+	
 });

@@ -15,7 +15,8 @@ function parseConfirmationEmail( $requestArray ){
     exit(0);
   }
   
-  $userInfo["link"] = $matches[1];
+  $userInfo["action"] = "confirmEmail";
+  $userInfo["link"] = trim($matches[1]);
   
-  
+  echo json_encode( $userInfo );
 }
