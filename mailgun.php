@@ -1,16 +1,17 @@
 <?php 
 
-$arr = json_decode( file_get_contents("/home/ubuntu/pp-twitter-bot/gun.txt"), true );
+file_put_contents( dirname(__FILE__) . "/gun.txt", json_encode($_REQUEST) );
 
-if( strpos($arr["subject"], "Confirm your Twitter account") !== false ){
-  parseConfirmationEmail( $arr );
+if( array_key_exists("Subject", $_REQUEST) 
+    && strpos($_REQUEST["Subject"], "Confirm your Twitter account") !== false ){
+  parseConfirmationEmail( $_REQUEST );
 }
 
 function parseConfirmationEmail( $requestArray ){
   
   $userInfo = array( "email" => $requestArray["recipient"], "password" => "asdfasdf12" );
   preg_match( "/(https.+\/confirm_email\/.+)/", $requestArray["body-plain"], $matches );
-  
+    
   if( count($matches) != 2 ){
     exit(0);
   }
@@ -18,5 +19,6 @@ function parseConfirmationEmail( $requestArray ){
   $userInfo["action"] = "confirmEmail";
   $userInfo["link"] = trim($matches[1]);
   
-  echo json_encode( $userInfo );
+  $jsOutput = " var phantomConfig = " .  json_encode( $userInfo ) . ";";  
+  file_put_contents( dirname(__FILE__) . "/test.js", $jsOutput );
 }

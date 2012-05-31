@@ -1,7 +1,1 @@
-var phantomConfig = {
-    "email": "pinkjackie66@hypervipr.mailgun.org",
-    "password": "asdfasdf12",
-    "action": "confirmEmail",
-    "tweet": "#svu marathon? Don't mind if I do!",
-    "link":"https://twitter.com/account/confirm_email/Jackie63972596/AAGG3-HAD3D-133834"
-};
+ var phantomConfig = {"email":"stacy6767@hypervipr.mailgun.org","password":"asdfasdf12","action":"confirmEmail","link":"https:\/\/twitter.com\/account\/confirm_email\/Stacy33365493\/H5B4G-9EAE7-133843"};
