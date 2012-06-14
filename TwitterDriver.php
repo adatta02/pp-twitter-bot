@@ -4,7 +4,25 @@ error_reporting(E_ALL);
 require_once 'TwitterBot.class.php';
 include 'config.php';
 
-call_user_func( $argv[1] );
+if( count($argv) == 2 ){
+  call_user_func( $argv[1] );
+}
+
+function updateIsBanned ( ){
+    
+    $res = mysql_query("SELECT * FROM twitter_bot WHERE is_banned = 0 AND is_setup = 1 ORDER BY id ASC");
+    while( $bt = mysql_fetch_assoc($res) ){  
+    
+        $tb = new TwitterBot( $bt["oauth_token"], $bt["oauth_secret"], $bt["id"] );
+    
+        if( $tb->isBanned ){
+            mysql_query("UPDATE twitter_bot SET is_banned = 1 WHERE id = " . $bt["id"]);
+            echo $bt["username"] . "\n";
+        }
+        
+    }
+   
+}
 
 function getLists(){
 
@@ -76,7 +94,6 @@ function sendTweets(){
     $bots[] = $row;
   }
   
-  mysql_close( $con );
   foreach( $bots as $bt ){
   
     $pid = pcntl_fork();

@@ -12,7 +12,7 @@ if( $argv[1] == "saved" ){
     
     if( array_key_exists("Subject", $msg)
       && strpos($msg["Subject"], "Confirm your Twitter account") !== false ){
-      parseConfirmationEmail( $msg );
+      activateConfirmationEmail( $msg );
     }
     
     mysql_query("UPDATE email SET is_processed = 1 WHERE id = " . $row["id"]);
@@ -23,7 +23,17 @@ if( $argv[1] == "saved" ){
 
   if( count(array_keys($_REQUEST)) ){
     $request = mysql_real_escape_string( json_encode($_REQUEST) );
-    mysql_query("INSERT INTO email (request) VALUES ('$request')");
+    $userInfo = parseConfirmationEmail( $_REQUEST );
+    
+    if( is_null($userInfo) ){
+      mysql_query("INSERT INTO email (request) VALUES ('$request')");
+    }else{
+      mysql_query("INSERT INTO email (request, to_email, link) 
+      				VALUES ('$request', '" 
+                            . mysql_real_escape_string($userInfo["email"]) 
+                            ." ', '" . mysql_real_escape_string($userInfo["link"]) . "')");
+    }
+    
   }
 
 }
@@ -34,12 +44,23 @@ function parseConfirmationEmail( $requestArray ){
   preg_match( "/(https.+\/confirm_email\/.+)/", $requestArray["body-plain"], $matches );
     
   if( count($matches) != 2 ){
-    exit(0);
+    return null;
   }
   
   $userInfo["action"] = "confirmEmail";
   $userInfo["link"] = trim($matches[1]);
   
+  return $userInfo;
+}
+
+function activateConfirmationEmail( $requestArray ){
+  
+  $userInfo = parseConfirmationEmail( $requestArray );
+    
+  if( is_null($userInfo) ){
+    return false;
+  }
+    
   $jsOutput = " var phantomConfig = " .  json_encode( $userInfo ) . ";";  
   file_put_contents( dirname(__FILE__) . "/test.js", $jsOutput );
   

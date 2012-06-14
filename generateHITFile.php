@@ -1,8 +1,10 @@
 <?php 
 
-$base = "pinkpanther";
-echo "email, username\n";
+$base = "pinkpoodles";
+echo "email, link\n";
 
-for($i=1000; $i<=1100; $i++){
-  echo $base.$i."@hypervipr.mailgun.org," . $base.$i . "\n"; 
+for($i=6000; $i<=6100; $i++){
+  $email = $base . $i . "@hypervipr.mailgun.org";
+  $link = "http://pinkpinterest.com/twitter/confirm.php?email=" . $email;
+  echo $email . "," . $link . "\n"; 
 }
