@@ -80,6 +80,28 @@ function initializeProfile(){
   
 }
 
+function testTweet(){
+    
+    $PIN_REPLACEMENTS = array();
+    $res = mysql_query("SELECT * FROM twitter_message WHERE 1 ORDER BY id ASC");
+    while( $row = mysql_fetch_assoc($res) ){
+        $PIN_REPLACEMENTS[] = $row["message"];
+    }
+    
+    $res = mysql_query("SELECT * FROM twitter_bot WHERE is_banned = 0 AND is_setup = 1 LIMIT 1");
+    $bt = mysql_fetch_assoc($res);
+    
+    $tb = new TwitterBot( $bt["oauth_token"], $bt["oauth_secret"], $bt["id"] );
+    
+    $lists = explode(",", $bt["ghost_lists"]);
+    for($i=0; $i<count($lists); $i++){
+        $lists[ $i ] = trim($lists[ $i ]);
+    }
+    
+    $tb->sendAtMessageTweet( array("msg_templates" => $PIN_REPLACEMENTS) );
+    
+}
+
 function sendTweets(){
   
   $PIN_REPLACEMENTS = array();
@@ -96,6 +118,21 @@ function sendTweets(){
   
   foreach( $bots as $bt ){
   
+      $lists = explode(",", $bt["ghost_lists"]);
+      for($i=0; $i<count($lists); $i++){
+          $lists[ $i ] = trim($lists[ $i ]);
+      }
+      
+      $tb = new TwitterBot( $bt["oauth_token"], $bt["oauth_secret"], $bt["id"] );
+      
+      if( $tb->isBanned ){
+          mysql_query("UPDATE twitter_bot SET is_banned = 1 WHERE id = " . $bt["id"]);
+          continue;
+      }
+      
+      $tb->sendTweet( array("lists" => $lists), array("msg_templates" => $PIN_REPLACEMENTS) );
+      
+      /*
     $pid = pcntl_fork();
     if ($pid == -1) {
          die('could not fork');
@@ -118,7 +155,7 @@ function sendTweets(){
       $tb->sendTweet( array("lists" => $lists), array("msg_templates" => $PIN_REPLACEMENTS) );
       
       die();
-    }
+    }*/
     
   }
   

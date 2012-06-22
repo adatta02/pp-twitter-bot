@@ -14,12 +14,14 @@ class TwitterBot {
   private $memcache;
   private $tweetsToday;
   private $botId;
+  private $con;
   public $isBanned = false;
   public  $oauthClient;
   
   public function TwitterBot( $token, $secret, $botId ){
     
-    include 'config.php';
+    $this->con = mysql_connect("localhost", "pink", "pink");
+    mysql_select_db("pink");
     
     $this->botId = $botId;
     $this->token = $token;
@@ -82,6 +84,9 @@ class TwitterBot {
     echo "Sleeping " . $sleep . " seconds...<br>";
     sleep( $sleep );
     
+    $this->con = mysql_connect("localhost", "pink", "pink");
+    mysql_select_db("pink");    
+    
     $isAtMsg = ( rand(0, 2) == 1 ) ? true : false;
     if( $isAtMsg && $this->tweetsToday["at_msg"] > self::$MAX_AT_MSG ){
       $isAtMsg = false;
@@ -89,14 +94,16 @@ class TwitterBot {
     
     if( $this->tweetsToday["last_was_at"] ){
         $isAtMsg = false;
-    }
+    }    
     
     if( $isAtMsg ){
+        
       $c = 0;
       do{
         $res = $this->sendAtMessageTweet( $atMsgConfig );
         $c ++;
       }while( !$res && $c < 3 );
+      
     }else{
       $this->sendGhostMessageTweet( $ghostConfig );
     }
@@ -113,8 +120,8 @@ class TwitterBot {
     
     $targetTweet = null;
     foreach( $tweets as $tw ){
-      
-      if( count($tw["entities"]["urls"]) != 0 || count($tw["entities"]["user_mentions"]) != 0 ){
+              
+      if( is_array($tw["entities"]) && count($tw["entities"]["urls"]) != 0 || count($tw["entities"]["user_mentions"]) != 0 ){
         continue;
       }
       
@@ -142,12 +149,25 @@ class TwitterBot {
   
   public function sendAtMessageTweet( $atMsgConfig = array() ){
     
-    $result = $this->oauthClient->get("search", array("q" => '"via @pinterest"', "include_entities" => true));
+    $queries = array( "via @pinterest", "pinterest.com", "@pinterest", "#pinterest" );
+    $tweets = array();
+    
+    foreach( $queries as $q ){
+      $result = $this->oauthClient->get("search", array("q" => $q, "include_entities" => true));      
+      if( array_key_exists("results", $result) ){
+        $tweets = array_merge( $tweets, $result ["results"] );
+      }
+    }    
     
     $tweetToParams = array ();
     $userIdTweets = array ();
     
-    foreach ( $result ["results"] as $rs ) {
+    if( !count($tweets) ){
+        echo "Could not find any @pinkpinterest tweets!";
+        return false;
+    }
+        
+    foreach ( $tweets as $rs ) {
       
       if (count ( $rs ["entities"] ["urls"] ) == 0) {
         continue;
@@ -160,7 +180,7 @@ class TwitterBot {
       foreach ( $rs ["entities"] ["urls"] as $url ) {
         
         // pop out the Pinterest URL
-        if (strpos ( $url ["expanded_url"], "http://pinterest.com/pin/" ) !== false) {
+        if (strpos ( $url ["expanded_url"], "pinterest.com/pin/" ) !== false) {
           $url ["expanded_url"] = rtrim ( $url ["expanded_url"], "/" );
           $pinId = basename ( $url ["expanded_url"] );
           break;
@@ -177,18 +197,21 @@ class TwitterBot {
     // grab profile info for the users
     $userProfileData = $this->oauthClient->post ( "users/lookup", 
                                             array ("user_id" => join ( ", ", array_keys ( $userIdTweets ) ) ) );
-        
-    foreach ( $userProfileData as $user ) {      
-      if ($user ["followers_count"] > 200  
-            && ($user ["followers_count"] / $user ["friends_count"] > .65)) {
+                                                
+    foreach ( $userProfileData as $user ) {  
+      
+      echo $user["screen_name"] . " => " . $user ["followers_count"] . "\n";
+      
+      if ($user ["followers_count"] > 200) {
         $targetUserId = $user ["id"];
         $targetUsername = $user ["screen_name"];
         break;
       }
-    }
+    }    
     
     // couldn't find anyone we like so bail.
     if( is_null($targetUserId) ){
+      echo "No users match our filters...\n"; 
       return false;
     }
     
@@ -260,7 +283,17 @@ class TwitterBot {
   }
   
   public function getIsUserMessaged( $userId ){
-    $res = mysql_fetch_assoc( mysql_query("SELECT COUNT(*) AS c FROM sent_tweet WHERE at_user_id = '". $userId . "'") );
+    $query = "SELECT COUNT(*) AS c FROM sent_tweet WHERE at_user_id = '". mysql_real_escape_string($userId) . "'";
+    
+    $q = mysql_query( $query );
+    
+    if( $q == false ){
+        echo $query . "\n";
+        echo mysql_error() . "\n";
+        die();
+    }
+    
+    $res = mysql_fetch_assoc( $q );
     return $res["c"] > 0 ? true : false;
   }
   
